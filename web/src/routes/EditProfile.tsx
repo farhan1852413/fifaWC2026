@@ -6,7 +6,6 @@ import {
   AppLayout,
   Card,
   Button,
-  
   ProfilePicture,
   useConfirm,
 } from '../components';

@@ -1,7 +1,5 @@
 import { db } from '../firebase';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
-
-const storage = getStorage()
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   ref,
   get,
@@ -12,6 +10,8 @@ import {
   onValue,
   type Unsubscribe,
 } from 'firebase/database';
+
+const storage = getStorage(); // ← move here, AFTER all imports
 
 export interface League {
   name: string;
