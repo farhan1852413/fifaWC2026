@@ -4,10 +4,9 @@ A betting pool web application for the FIFA World Cup 2026. Built with React, Ty
 
 ### 🚀 **Play Now**
 
-Join the action live at **[worldcup-2026.web.app](https://worldcup-2026.web.app/)**!
+Join the action live at 
 
-> [!NOTE]
-> 🚧 **Status:** Currently in public beta testing.
+
 
 ## Features
 
@@ -174,18 +173,4 @@ firebase deploy --only hosting
 firebase deploy --only functions
 ```
 
-## Code Conventions
 
-- **2-space indentation** across all files
-- **Named exports** for all components and modules
-- **Barrel files** (`index.ts`) for clean imports
-- **PascalCase** for component and route file names
-- **TypeScript strict mode** enabled
-
-## Contributing
-
-Contributions are welcome! Feel free to open a Pull Request.
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.

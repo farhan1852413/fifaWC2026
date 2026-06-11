@@ -1,14 +1,14 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '../firebase';
 import { bgImage, worldcupLogo } from '../assets';
 import { AppLayout, Button, Card, LeaguePicture } from '../components';
-import { useAuth, useLeague } from '../hooks';
+import { useAuth, useLeague, useToast } from '../hooks';
 import {
+  getGoogleSignInErrorMessage,
   getLeagueBySlug,
   joinLeague,
   isLeagueMember,
+  signInWithGoogle,
   type LeagueWithId,
 } from '../services';
 
@@ -38,6 +38,7 @@ export const JoinLeague = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { setSelectedLeague } = useLeague();
+  const { showToast } = useToast();
 
   const [league, setLeague] = React.useState<LeagueWithId | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -120,11 +121,13 @@ export const JoinLeague = () => {
     });
 
     setSigningIn(true);
-    signInWithPopup(auth, googleProvider).catch((err) => {
-      console.error('Sign in error:', err);
-      setSigningIn(false);
-      clearJoinIntent();
-    });
+    signInWithGoogle()
+      .catch((err) => {
+        console.error('Sign in error:', err);
+        showToast(getGoogleSignInErrorMessage(err), 'error');
+        clearJoinIntent();
+      })
+      .finally(() => setSigningIn(false));
   };
 
   // Show loading state

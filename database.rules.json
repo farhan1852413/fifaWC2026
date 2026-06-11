@@ -101,6 +101,12 @@
       }
     },
 
+    // Meta - app configuration flags
+    "meta": {
+      ".read": true,
+      ".write": "!data.exists()"
+    },
+
     // Default deny all other paths
     "$other": {
       ".read": false,

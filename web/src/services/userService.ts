@@ -1,4 +1,4 @@
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 import {
   ref,
   get,
@@ -9,11 +9,6 @@ import {
   limitToFirst,
   onValue,
 } from 'firebase/database';
-import {
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL,
-} from 'firebase/storage';
 import type { User } from 'firebase/auth';
 
 export interface UserData {
@@ -83,10 +78,12 @@ export const handleUserLogin = async (user: User) => {
 
   if (!snapshot.exists()) {
     // Check if this is the first user to make them admin
-    const usersRef = ref(db, 'users');
-    const firstUserQuery = query(usersRef, limitToFirst(1));
-    const usersSnapshot = await get(firstUserQuery);
-    const isFirstUser = !usersSnapshot.exists();
+    const firstUserFlagRef = ref(db, 'meta/firstUserClaimed');
+    const firstUserFlagSnapshot = await get(firstUserFlagRef);
+    const isFirstUser = !firstUserFlagSnapshot.exists();
+    if (isFirstUser) {
+  await set(firstUserFlagRef, true);
+}
 
     // Generate a unique username
     const baseUserName = user.email ? user.email.split('@')[0] : 'user';
@@ -157,14 +154,13 @@ const generateUniqueUsername = async (
 
 export const updateUserProfile = async (
   uid: string,
-  data: { userName: string; displayName: string },
+  data: { userName: string; displayName: string; photoURL?: string },
   oldUserName?: string
 ) => {
   const newUserName = sanitizeUsername(data.userName);
   const normalizedNew = normalizeUsername(newUserName);
   const normalizedOld = oldUserName ? normalizeUsername(oldUserName) : '';
 
-  // If normalized username is changing, verify it's available and update the index
   if (normalizedOld && normalizedOld !== normalizedNew) {
     if (isReservedUsername(newUserName)) {
       throw new Error('Username is reserved');
@@ -174,18 +170,15 @@ export const updateUserProfile = async (
       throw new Error('Username is already taken');
     }
 
-    // Remove old username from index (normalized)
     await remove(ref(db, `usernames/${normalizedOld}`));
-
-    // Claim new username (normalized)
     await set(ref(db, `usernames/${normalizedNew}`), uid);
   }
 
-  // Update user profile (store display version with dots)
   const userRef = ref(db, `users/${uid}`);
   await update(userRef, {
     userName: newUserName,
     displayName: data.displayName,
+    ...(data.photoURL !== undefined && { photoURL: data.photoURL }),
   });
 };
 
@@ -222,28 +215,15 @@ export const getUserByUsername = async (
  */
 export const uploadProfilePicture = async (
   uid: string,
-  file: File
+  avatarUrl: string
 ): Promise<string> => {
-  // Get file extension from the original file
-  const extension = file.name.split('.').pop() ?? 'jpg';
-
-  // Create a reference to the file location
-  const fileRef = storageRef(
-    storage,
-    `profile-pictures/${uid}/profile.${extension}`
-  );
-
-  // Upload the file
-  await uploadBytes(fileRef, file);
-
-  // Get the download URL
-  const downloadURL = await getDownloadURL(fileRef);
-
-  // Update the user's photoURL in the database
   const userRef = ref(db, `users/${uid}`);
-  await update(userRef, { photoURL: downloadURL });
 
-  return downloadURL;
+  await update(userRef, {
+    photoURL: avatarUrl,
+  });
+
+  return avatarUrl;
 };
 
 export interface UserWithId extends UserData {

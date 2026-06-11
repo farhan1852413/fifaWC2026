@@ -1,4 +1,4 @@
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 import {
   ref,
   get,
@@ -9,11 +9,6 @@ import {
   onValue,
   type Unsubscribe,
 } from 'firebase/database';
-import {
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL,
-} from 'firebase/storage';
 
 export interface League {
   name: string;

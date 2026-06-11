@@ -23,6 +23,11 @@ export {
 export type { Prediction, UserPredictions } from './predictionService';
 
 export {
+  getGoogleSignInErrorMessage,
+  signInWithGoogle,
+} from './authService';
+
+export {
   checkSlugAvailable,
   createLeague,
   deleteLeague,

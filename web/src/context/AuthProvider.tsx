@@ -1,10 +1,14 @@
 import React from 'react';
 import { type User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase';
-import { handleUserLogin, joinLeague, isLeagueMember, type UserData } from '../services';
+import {
+  handleUserLogin,
+  joinLeague,
+  isLeagueMember,
+  type UserData,
+} from '../services';
 import { AuthContext } from './AuthContext';
 
-// Join intent storage key and helpers
 const JOIN_INTENT_KEY = 'pendingJoinLeague';
 
 type JoinIntent = {
@@ -27,7 +31,6 @@ const clearJoinIntent = (): void => {
   localStorage.removeItem(JOIN_INTENT_KEY);
 };
 
-// Store league ID to select after join
 const PENDING_LEAGUE_KEY = 'pendingSelectedLeague';
 
 export const setPendingSelectedLeague = (leagueId: string): void => {
@@ -50,44 +53,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      if (currentUser) {
-        handleUserLogin(currentUser)
-          .then(async (data) => {
-            setUserData(data);
 
-            // Check for pending join intent
-            const joinIntent = getJoinIntent();
-            if (joinIntent) {
-              try {
-                const alreadyMember = await isLeagueMember(
-                  joinIntent.leagueId,
-                  currentUser.uid
-                );
-                if (!alreadyMember) {
-                  await joinLeague(joinIntent.leagueId, currentUser.uid);
-                }
-                // Store league ID to be selected after redirect
-                setPendingSelectedLeague(joinIntent.leagueId);
-                // Redirect to the league page
-                window.location.href = `/league/${joinIntent.slug}`;
-              } catch (err) {
-                console.error('Error processing join intent:', err);
-              } finally {
-                clearJoinIntent();
-              }
-            }
-          })
-          .catch((error: unknown) => {
-            console.error('Error fetching user data:', error);
-            setUserData(null);
-          })
-          .finally(() => {
-            setLoading(false);
-          });
-      } else {
+      if (!currentUser) {
         setUserData(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // 🔥 IMPORTANT FIX: ensure Firebase auth token is ready
+        await currentUser.getIdToken();
+
+        // Load/create user in DB
+        const data = await handleUserLogin(currentUser);
+        setUserData(data);
+
+        // Handle pending league join
+        const joinIntent = getJoinIntent();
+
+        if (joinIntent) {
+          try {
+            const alreadyMember = await isLeagueMember(
+              joinIntent.leagueId,
+              currentUser.uid
+            );
+
+            if (!alreadyMember) {
+              await joinLeague(joinIntent.leagueId, currentUser.uid);
+            }
+
+            setPendingSelectedLeague(joinIntent.leagueId);
+            window.location.href = `/league/${joinIntent.slug}`;
+          } catch (err) {
+            console.error('Error processing join intent:', err);
+          } finally {
+            clearJoinIntent();
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        if (error instanceof Error) {
+    console.error('Message:', error.message);
+    console.error('Stack:', error.stack);
+  }
+        setUserData(null);
+      } finally {
         setLoading(false);
       }
     });
@@ -102,5 +114,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUserData,
   };
 
-  return <AuthContext value={value}>{!loading && children}</AuthContext>;
+  return (
+    <AuthContext value={value}>
+      {!loading && children}
+    </AuthContext>
+  );
 };
