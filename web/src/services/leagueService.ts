@@ -1,4 +1,7 @@
 import { db } from '../firebase';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
+
+const storage = getStorage()
 import {
   ref,
   get,

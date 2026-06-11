@@ -5,8 +5,7 @@ import {
   set,
   update,
   remove,
-  query,
-  limitToFirst,
+  
   onValue,
 } from 'firebase/database';
 import type { User } from 'firebase/auth';
