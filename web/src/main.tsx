@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components';
 import { AuthProvider, MatchProvider, LeagueProvider, ToastProvider } from './context';
 import {
   About,
+  Admin,
   EditLeague,
   EditProfile,
   Home,
@@ -73,6 +74,14 @@ createRoot(document.getElementById('root')!).render(
                   element={
                     <ProtectedRoute>
                       <EditProfile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute>
+                      <Admin />
                     </ProtectedRoute>
                   }
                 />

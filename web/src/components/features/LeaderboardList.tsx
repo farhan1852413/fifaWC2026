@@ -114,9 +114,10 @@ export const LeaderboardList = ({
     if (externalUsers) return;
 
     const unsubscribe = subscribeToLeaderboard((data) => {
-      setAllUsers(data);
-      setLoading(false);
-    });
+  console.log('leaderboard data:', data);
+  setAllUsers(data);
+  setLoading(false);
+});
     return () => unsubscribe();
   }, [externalUsers]);
 

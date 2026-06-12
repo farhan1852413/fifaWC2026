@@ -1,4 +1,5 @@
 export { About } from './About';
+export { Admin } from './Admin';
 export { EditLeague } from './EditLeague';
 export { EditProfile } from './EditProfile';
 export { Home } from './Home';
