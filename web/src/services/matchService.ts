@@ -55,9 +55,6 @@ interface FifaApiResponse {
   Results: FifaApiMatch[];
 }
 
-/**
- * Fetch matches from the FIFA API and transform them
- */
 const fetchFromFifaApi = async (): Promise<MatchesData> => {
   const url = new URL(FIFA_API_URL);
   url.searchParams.set('idseason', SEASON_ID);
@@ -73,9 +70,6 @@ const fetchFromFifaApi = async (): Promise<MatchesData> => {
   return transformFifaData(data.Results);
 };
 
-/**
- * Transform FIFA API data to our Match format
- */
 const transformFifaData = (results: FifaApiMatch[]): MatchesData => {
   const matches: MatchesData = {};
 
@@ -111,43 +105,40 @@ const transformFifaData = (results: FifaApiMatch[]): MatchesData => {
   return matches;
 };
 
-/**
- * Fetch all matches from the database
- * If matches don't exist, fetch from FIFA API and initialize
- */
 export const fetchMatches = async (): Promise<MatchesData> => {
   const matchesRef = ref(db, 'matches');
   const snapshot = await get(matchesRef);
 
   if (!snapshot.exists()) {
-    // Fetch from FIFA API and initialize
     const matches = await fetchFromFifaApi();
-    // Try to save to database (requires admin), but don't fail if permission denied
-    try {
-      await set(matchesRef, matches);
-    } catch (err) {
-      console.warn('Could not save matches to database (admin required):', err);
-    }
+    try { await set(matchesRef, matches); } catch (err) { console.warn('Could not save matches to database (admin required):', err); }
     return matches;
   }
 
-  return snapshot.val() as MatchesData;
+  const cached = snapshot.val() as MatchesData;
+
+  // Refresh if we don't have all 104 tournament matches yet
+  const matchCount = Object.keys(cached).length;
+  if (matchCount < 104) {
+    const fresh = await fetchFromFifaApi();
+    try { await set(matchesRef, fresh); } catch (err) { console.warn('Could not refresh matches in database (admin required):', err); }
+    return fresh;
+  }
+
+  return cached;
 };
 
-/**
- * Force refresh matches from FIFA API
- * Useful for updating scores during the tournament
- */
 export const refreshMatches = async (): Promise<MatchesData> => {
   const matches = await fetchFromFifaApi();
   const matchesRef = ref(db, 'matches');
-  await set(matchesRef, matches);
+  try {
+    await set(matchesRef, matches);
+  } catch (err) {
+    console.warn('Could not refresh matches in database (admin required):', err);
+  }
   return matches;
 };
 
-/**
- * Get a single match by game number
- */
 export const getMatch = async (gameNumber: string): Promise<Match | null> => {
   const matchRef = ref(db, `matches/${gameNumber}`);
   const snapshot = await get(matchRef);
